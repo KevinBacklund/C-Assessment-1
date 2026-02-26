@@ -185,6 +185,30 @@ void UseMap(Player& player, std::vector<std::vector<Room>>& map)
 	std::cout << "You are currently in: [" << map[player.position.x][player.position.y].name << "]\n";
 }
 
+void UsePotion(Player& player) 
+{
+	if (player.health == 100)
+	{
+		std::cout << "You don't feel like you need a potion right now";
+	}
+	else 
+	{
+		int initialHealth = player.health;
+		player.health += 10;
+		if (player.health > 100)
+		{
+			player.health = 100;
+		}
+		std::cout << "You used a potion and restored " << (player.health - initialHealth) << " health points.\n";
+		std::cout << "Your current health is: " << player.health << "\n";
+		auto findIterator = std::find(player.inventory.begin(), player.inventory.end(), "POTION");
+		if (findIterator != player.inventory.end())
+		{
+			player.inventory.erase(findIterator);
+		}
+	}
+}
+
 void GuessTheWord() 
 {
 	std::string possibleWords[]  = { "HELLO", "WORLD", "GAME", "PROGRAMMING", "ADVENTURE" };
@@ -245,6 +269,10 @@ void UseItem(std::string item, Player& player, std::vector<std::vector<Room>>& m
 	else if (item == "GAMECONSOLE") 
 	{
 		GuessTheWord();
+	}
+	else if (item == "POTION") 
+	{
+		UsePotion(player);
 	}
 	else 
 	{
@@ -435,19 +463,19 @@ int main()
 	std::vector<std::vector<Room>> map = 
 	{
 		{
-			{"Room 1", "This is the first room.", {"KEY", "MAP", "GAMECONSOLE"}},
-			{"Room 2", "This is the second room.", {"SWORD", "SHIELD"}},
-			{"Room 5", "This is the fith room."}
+			{"Cabin", "You are in a small cabin.", {"MAP", "GAMECONSOLE"}},
+			{"Field", "You are in a Field you see a small cabin and a tiny shed."},
+			{"Shed", "You are in a tiny shed.", {"SWORD", "SHIELD"}}
 		},
 		{
-			{"Room 3", "This is the third room.", {"POTION", "SCROLL"}, {goblin}},
-			{"Room 4", "This is the fourth room.", {"GEM", "COIN"}, {goblin1}},
-			{"Room 5", "This is the fith room." }
+			{"Forest", "You are in a forest.", {"POTION"}, {goblin}},
+			{"Forest", "You are in a forest.", {"POTION"}, {goblin1}},
+			{"Forest", "You are in a forest." }
 		},
 		{
-			{"Room 3", "This is the third room."},
-			{"Room 4", "This is the fourth room."},
-			{"Room 5", "This is the fith room." }
+			{"Field", "You are in a Field."},
+			{"Field", "You are in a Field."},
+			{"Field", "You are in a Field." }
 		}
 	};
 	ShowRoomDescription(player.position, map);
