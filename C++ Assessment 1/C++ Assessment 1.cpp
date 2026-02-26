@@ -29,9 +29,9 @@ struct Room
 struct Player
 {
 	Position position;
-	std::vector<std::string> inventory;
 	int health;
 	int attackPower;
+	std::vector<std::string> inventory;
 };
 
 void Quit()
@@ -67,7 +67,9 @@ void Commands()
 
 void Help() 
 {
-	std::cout << "Help Information:\n";
+	std::cout << "- Write \"commands\" to get a list of all available commands.\n";
+	std::cout << "- Use the game console in the starting room to play a minigame.\n";
+	std::cout << "- Explore the rooms and find items to help you on your adventure.\n";
 }
 
 
@@ -76,8 +78,6 @@ void ShowInventory(Player player)
 {
 	if (!player.inventory.empty())
 	{
-
-
 		std::cout << "Your inventory contains:\n";
 		for (std::string item : player.inventory)
 		{
@@ -166,7 +166,7 @@ void PickUp(std::string item, Player& player, std::vector<std::vector<Room>>& ma
 	}
 	else 
 	{
-		std::cout << "You could not pick up" + item + "\n";
+		std::cout << "You could not pick up " + item + "\n";
 	}
 }
 
@@ -178,14 +178,11 @@ void UseMap(Player& player, std::vector<std::vector<Room>>& map)
 		for (int j = 0; j < map[i].size(); ++j) 
 		{
 			std::cout << "[" << map[i][j].name << "]";
-			if (player.position.x == i && player.position.y == j) 
-			{
-				std::cout << " <- You are here";
-			}
 			std::cout << " ";
 		}
 		std::cout << "\n";
 	}
+	std::cout << "You are currently in: [" << map[player.position.x][player.position.y].name << "]\n";
 }
 
 void GuessTheWord() 
@@ -255,6 +252,31 @@ void UseItem(std::string item, Player& player, std::vector<std::vector<Room>>& m
 	}
 }
 
+void EnemyAttack(Player& player, Enemy& enemy) 
+{
+	int attackPower = enemy.attackPower;	
+
+	if (Contains(player.inventory, "SHIELD")) 
+	{
+		attackPower -= 5;
+		std::cout << "You block the " + enemy.name + "'s attack with your shield, reducing the damage to " << attackPower << ".\n";
+	}
+	else 
+	{
+		std::cout << "The " + enemy.name + " attacks you for " << attackPower << " damage!\n";
+	}
+	player.health -= attackPower;
+	if (player.health <= 0) 
+	{
+		std::cout << "You have been defeated by the " + enemy.name + ". Game Over.\n";
+		Quit();
+	}
+	else 
+	{
+		std::cout << "You have " << player.health << " health remaining.\n";
+	}
+}
+
 void AttackEnemy(std::string& enemyName, Player& player, std::vector<std::vector<Room>>& map)
 {
 	Room& currentRoom = map[player.position.x][player.position.y];
@@ -295,6 +317,7 @@ void AttackEnemy(std::string& enemyName, Player& player, std::vector<std::vector
 	else 
 	{
 		std::cout << "The " + enemy.name + " has " << enemy.health << " health remaining.\n";
+		EnemyAttack(player, enemy);
 	}
 }
 
@@ -397,7 +420,7 @@ void ProcessCommand(std::string& command, std::string& commandLog, Player& playe
 void RecieveCommand(std::string&commandLog, Player& player, std::vector<std::vector<Room>>& map)
 {
 	std::string command;
-	std::cout << "Enter a command: ";
+	std::cout << "\nEnter a command: ";
 	std::getline(std::cin, command);
 	std::transform(command.begin(), command.end(), command.begin(), ::toupper);
 	ProcessCommand(command, commandLog, player, map);
@@ -406,12 +429,9 @@ void RecieveCommand(std::string&commandLog, Player& player, std::vector<std::vec
 int main()
 {
 	std::string commandLog;
-	Player player;
-	player.position = { 0, 0 };
-	player.health = 100;
-	player.attackPower = 10;
-
-	Enemy goblin = { "GOBLIN", "A small, green creature with sharp teeth.", 30, 5 };
+	Player player = { {0,0}, 100, 10 };
+	Enemy goblin = { "GOBLIN", "A small, green creature with sharp teeth.", 30, 10 };
+	Enemy goblin1 = goblin;
 	std::vector<std::vector<Room>> map = 
 	{
 		{
@@ -419,8 +439,8 @@ int main()
 			{"Room 2", "This is the second room.", {"SWORD", "SHIELD"}}
 		},
 		{
-			{"Room 3", "This is the third room.", {"POTION", "SCROLL"}},
-			{"Room 4", "This is the fourth room.", {"GEM", "COIN"}, {goblin}}
+			{"Room 3", "This is the third room.", {"POTION", "SCROLL"}, {goblin}},
+			{"Room 4", "This is the fourth room.", {"GEM", "COIN"}, {goblin1}}
 		}
 	};
 	ShowRoomDescription(player.position, map);
