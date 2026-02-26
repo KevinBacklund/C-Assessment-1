@@ -436,11 +436,18 @@ int main()
 	{
 		{
 			{"Room 1", "This is the first room.", {"KEY", "MAP", "GAMECONSOLE"}},
-			{"Room 2", "This is the second room.", {"SWORD", "SHIELD"}}
+			{"Room 2", "This is the second room.", {"SWORD", "SHIELD"}},
+			{"Room 5", "This is the fith room."}
 		},
 		{
 			{"Room 3", "This is the third room.", {"POTION", "SCROLL"}, {goblin}},
-			{"Room 4", "This is the fourth room.", {"GEM", "COIN"}, {goblin1}}
+			{"Room 4", "This is the fourth room.", {"GEM", "COIN"}, {goblin1}},
+			{"Room 5", "This is the fith room." }
+		},
+		{
+			{"Room 3", "This is the third room."},
+			{"Room 4", "This is the fourth room."},
+			{"Room 5", "This is the fith room." }
 		}
 	};
 	ShowRoomDescription(player.position, map);
