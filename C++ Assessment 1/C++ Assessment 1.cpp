@@ -22,6 +22,7 @@ struct Room
 {
 	std::string name;
 	std::string description;
+	std::vector<std::string> walls;	
 	std::vector<std::string> items;
 	std::vector<Enemy> enemies;
 };
@@ -33,6 +34,19 @@ struct Player
 	int attackPower;
 	std::vector<std::string> inventory;
 };
+
+bool Contains(std::vector<std::string> items, std::string item)
+{
+	for (std::string itm : items)
+	{
+		if (itm == item)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 
 void Quit()
 {
@@ -47,22 +61,23 @@ void ShowLog(std::string& commandLog)
 
 void AddToLog(std::string& commandLog,std::string& command)
 {
-	commandLog.append(command + "\n");
+	commandLog.append("- " + command + "\n");
 }
 
 void Commands()
 {
 	std::cout << "Available commands:\n";
-	std::cout << "1. QUIT - Exit the program\n";
+	std::cout << "1. QUIT - Exit the game\n";
 	std::cout << "2. LOG - Show the command log\n";
 	std::cout << "3. COMMANDS - Show available commands\n";
 	std::cout << "4. HELP - Show help information\n";
 	std::cout << "5. MOVE <DIRECTION> - Move in a specified direction (NORTH, SOUTH, EAST, WEST)\n";
-	std::cout << "6. PICKUP <ITEM> - Pick up an item in the current room\n";
+	std::cout << "6. PICKUP <ITEM> - Pick up an item in the current room and add it to your inventory\n";
 	std::cout << "7. INVENTORY - Show your inventory\n";
 	std::cout << "8. USE <ITEM> - Use an item from your inventory or the current room\n";
 	std::cout << "9. LOOK - Look around the current room\n";
 	std::cout << "10. ATTACK <ENEMY> - Attack an enemy in the current room\n";
+	std::cout << "11. STATS - See your current stats\n";
 }
 
 void Help() 
@@ -90,16 +105,17 @@ void ShowInventory(Player player)
 	}
 }
 
-bool Contains(std::vector<std::string> items, std::string item) 
+void Stats(Player player)
 {
-	for (std::string itm : items) 
+	std::cout << "Your current health is: " << player.health << "/100\n";
+	if (Contains(player.inventory, "SWORD"))
 	{
-		if (itm == item) 
-		{
-			return true;
-		}
+		std::cout << "Your current attack power is: " << (player.attackPower + 5) << " due to having a sword\n";
 	}
-	return false;
+	else
+	{
+		std::cout << "Your current attack power is: " << player.attackPower << std::endl;
+	}
 }
 
 void ShowRoomDescription(Position roomPos, std::vector<std::vector<Room>>& map) 
@@ -113,6 +129,7 @@ void ShowRoomDescription(Position roomPos, std::vector<std::vector<Room>>& map)
 		{
 			std::cout << "- " + item + "\n";
 		}
+		std::cout << std::endl;
 	}
 	if (!room.enemies.empty())
 	{
@@ -121,6 +138,7 @@ void ShowRoomDescription(Position roomPos, std::vector<std::vector<Room>>& map)
 		{
 			std::cout << "- " + enemy.name + ": " + enemy.description + "\n";
 		}
+		std::cout << std::endl;
 	}
 }
 
@@ -131,21 +149,55 @@ void Look(Player& player, std::vector<std::vector<Room>>& map)
 
 void Move(Position& playerPos, std::string direction, std::vector<std::vector<Room>>& map)
 {
+	Room currentRoom = map[playerPos.x][playerPos.y];
+	Room destinationRoom;
 	if (direction == "NORTH" && playerPos.x > 0) 
 	{
-		playerPos.x--;
+		destinationRoom = map[playerPos.x - 1][playerPos.y];
+		if ((!Contains(currentRoom.walls, "NORTHWALL")) && (!Contains(destinationRoom.walls, "SOUTHWALL")))
+		{
+			playerPos.x--;
+		}
+		else
+		{
+			std::cout << "There is a wall there try a different direction\n";
+		}
 	}
 	else if (direction == "SOUTH" && playerPos.x < map.size() - 1) 
 	{
-		playerPos.x++;
+		destinationRoom = map[playerPos.x + 1][playerPos.y];
+		if ((!Contains(currentRoom.walls, "SOUTHWALL")) && (!Contains(destinationRoom.walls, "NORTHWALL")))
+		{
+			playerPos.x++;
+		}
+		else
+		{
+			std::cout << "There is a wall there try a different direction\n";
+		}
 	}
 	else if (direction == "EAST" && playerPos.y < map[0].size() - 1) 
 	{
-		playerPos.y++;
+		destinationRoom = map[playerPos.x][playerPos.y + 1];
+		if ((!Contains(currentRoom.walls, "EASTWALL")) && (!Contains(destinationRoom.walls, "WESTWALL")))
+		{
+			playerPos.y++;
+		}
+		else
+		{
+			std::cout << "There is a wall there try a different direction\n";
+		}
 	}
 	else if (direction == "WEST" && playerPos.y > 0) 
 	{
-		playerPos.y--;
+		destinationRoom = map[playerPos.x][playerPos.y - 1];
+		if ((!Contains(currentRoom.walls, "WESTWALL")) && (!Contains(destinationRoom.walls, "EASTWALL")))
+		{
+			playerPos.y--;
+		}
+		else
+		{
+			std::cout << "There is a wall there try a different direction\n";
+		}
 	}
 	else 
 	{
@@ -287,6 +339,10 @@ void EnemyAttack(Player& player, Enemy& enemy)
 	if (Contains(player.inventory, "SHIELD")) 
 	{
 		attackPower -= 5;
+		if (attackPower < 0)
+		{
+			attackPower = 0;
+		}
 		std::cout << "You block the " + enemy.name + "'s attack with your shield, reducing the damage to " << attackPower << ".\n";
 	}
 	else 
@@ -310,6 +366,7 @@ void AttackEnemy(std::string& enemyName, Player& player, std::vector<std::vector
 	Room& currentRoom = map[player.position.x][player.position.y];
 	int enemyIndex = -1;
 	int attackPower = player.attackPower;
+
 	for ( int i = 0; i < currentRoom.enemies.size(); i++) 
 	{
 		if (currentRoom.enemies[i].name == enemyName)
@@ -319,13 +376,13 @@ void AttackEnemy(std::string& enemyName, Player& player, std::vector<std::vector
 		}
 	}
 
-	Enemy& enemy = currentRoom.enemies[enemyIndex];
-
 	if (enemyIndex < 0) 
 	{
 		std::cout << "You can't find a " + enemyName + " to attack\n";
 		return;
 	}
+
+	Enemy& enemy = currentRoom.enemies[enemyIndex];
 
 	if (Contains(player.inventory, "SWORD")) 
 	{
@@ -336,7 +393,9 @@ void AttackEnemy(std::string& enemyName, Player& player, std::vector<std::vector
 	{
 		std::cout << "You punch the " + enemy.name + " for " << attackPower << " damage.\n";
 	}
+
 	enemy.health -= attackPower;
+
 	if (enemy.health <= 0) 
 	{
 		std::cout << "You defeated the " + enemy.name + "!\n";
@@ -439,6 +498,11 @@ void ProcessCommand(std::string& command, std::string& commandLog, Player& playe
 			std::cout << "Please specify an enemy to attack\n";
 		}
 	}
+	else if (words[0] == "STATS")
+	{
+		AddToLog(commandLog, command);
+		Stats(player);
+	}
 	else
 	{
 		std::cout << "Unknown command: " << words[0] << "\n";
@@ -450,6 +514,7 @@ void RecieveCommand(std::string&commandLog, Player& player, std::vector<std::vec
 	std::string command;
 	std::cout << "\nEnter a command: ";
 	std::getline(std::cin, command);
+	std::cout << std::endl;
 	std::transform(command.begin(), command.end(), command.begin(), ::toupper);
 	ProcessCommand(command, commandLog, player, map);
 }
@@ -457,25 +522,53 @@ void RecieveCommand(std::string&commandLog, Player& player, std::vector<std::vec
 int main()
 {
 	std::string commandLog;
-	Player player = { {0,0}, 100, 10 };
+	Player player = { {1,4}, 100, 10 };
 	Enemy goblin = { "GOBLIN", "A small, green creature with sharp teeth.", 30, 10 };
 	Enemy goblin1 = goblin;
+	Enemy goblin2 = goblin;
+	Enemy goblin3 = goblin;
+
+	Enemy rat = { "RAT", "A Rodent with sharp teeth", 15, 5 };
+	Enemy rat1 = rat;
+	Enemy rat2 = rat;
+	Enemy rat3 = rat;
+	Enemy rat4 = rat;
+	Enemy rat5 = rat;
+	Enemy rat6 = rat;
+	Enemy rat7 = rat;
 	std::vector<std::vector<Room>> map = 
 	{
 		{
-			{"Cabin", "You are in a small cabin.", {"MAP", "GAMECONSOLE"}},
-			{"Field", "You are in a Field you see a small cabin and a tiny shed."},
-			{"Shed", "You are in a tiny shed.", {"SWORD", "SHIELD"}}
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat}},
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat7}},
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat2,rat6}},
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat5,rat1}},
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat4}},
+			{"Field", "You are in a Field infested with rats they seem to be eating some kind of herb.\n", {"NONE","NONE","NONE","NONE"},{"HERB"}, {rat3}}
 		},
 		{
-			{"Forest", "You are in a forest.", {"POTION"}, {goblin}},
-			{"Forest", "You are in a forest.", {"POTION"}, {goblin1}},
-			{"Forest", "You are in a forest." }
+			{"Field", "You are in a Field.\n", {"NONE","NONE","NONE","NONE"}},
+			{"Field", "You are in a Field.\n", {"NONE","NONE","NONE","NONE"}},
+			{"Field", "You are in a Field.\n", {"NONE","NONE","NONE","NONE"}},
+			{"Cabin", "You are in a small cabin with a door on the east wall.\n",{"NORTHWALL","NONE","SOUTHWALL","WESTWALL"} , {"MAP", "GAMECONSOLE", "POTION"}},
+			{"Field", "You are in a Field, you see a small cabin in the west, and a tiny shed in the east.\n",{"NONE","NONE","NONE","NONE"}},
+			{"Shed", "You are in a tiny shed with a door on the west wall.\n",{"NORTHWALL","EASTWALL","SOUTHWALL","NONE"} ,{"SWORD", "SHIELD"}}
 		},
 		{
-			{"Field", "You are in a Field."},
-			{"Field", "You are in a Field."},
-			{"Field", "You are in a Field." }
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} ,{}, {goblin}},
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} ,{}, {goblin1}},
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} ,{}, {goblin2}},
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} ,{}, {goblin3}},
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} }
+		},
+		{
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} },
+			{"Forest", "You are in a forest.\n",{"NONE","NONE","NONE","NONE"} }
 		}
 	};
 	ShowRoomDescription(player.position, map);
